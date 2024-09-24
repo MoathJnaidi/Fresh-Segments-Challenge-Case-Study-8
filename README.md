@@ -289,6 +289,23 @@ CREATE TABLE interest_combined AS
       FROM interest_per_month_year
      ORDER BY 3 DESC;
     ```
+    |month_year|total_interest|cumulative_perc|
+    |----------|--------------|---------------|
+    |1         |13            |100.0000       |
+    |2         |12            |98.9185        |
+    |3         |15            |97.9201        |
+    |4         |32            |96.6722        |
+    |5         |38            |94.0100        |
+    |6         |33            |90.8486        |
+    |7         |90            |88.1032        |
+    |8         |67            |80.6156        |
+    |9         |95            |75.0416        |
+    |10        |86            |67.1381        |
+    |11        |94            |59.9834        |
+    |12        |65            |52.1631        |
+    |13        |82            |46.7554        |
+    |14        |480           |39.9334        |
+
     months starting from 6 to 1 all have 90 percent or higher
   
 #### 3. If we were to remove all `interest_id` values which are lower than the `total_months` value we found in the previous question - how many total data points would we be removing?
@@ -306,6 +323,10 @@ CREATE TABLE interest_combined AS
     FROM interest_metrics
    WHERE interest_id IN (SELECT interest_id FROM cte);
 ```   
+|total_interest|
+|--------------|
+|400           |
+
 400 interest_id values would be removed
   
 #### 4. Does this decision make sense to remove these data points from a business perspective? Use an example where there are all 14 months present to a removed `interest` example for your arguments - think about what it means to have less months present from a segment perspective.
@@ -325,6 +346,25 @@ CREATE TABLE interest_combined AS
           HAVING COUNT(DISTINCT month_year) = 14
             ) 
    GROUP BY 1;
+ ```
+ |month_year|total_interest|max_rank|
+ |----------|--------------|--------|
+ |2018-07-01|480           |1       |
+ |2018-08-01|480           |1       |
+ |2018-09-01|480           |1       |
+ |2018-10-01|480           |1       |
+ |2018-11-01|480           |1       |
+ |2018-12-01|480           |3       |
+ |2019-01-01|480           |2       |
+ |2019-02-01|480           |2       |
+ |2019-03-01|480           |2       |
+ |2019-04-01|480           |2       |
+ |2019-05-01|480           |2       |
+ |2019-06-01|480           |2       |
+ |2019-07-01|480           |2       |
+ |2019-08-01|480           |2       |
+
+ ```sql
   -- 1 month 
   SELECT DISTINCT month_year,
 	     COUNT(DISTINCT interest_id) AS total_interest,
@@ -338,6 +378,15 @@ CREATE TABLE interest_combined AS
           HAVING COUNT(DISTINCT month_year) = 1
             )
   ```
+  |month_year|total_interest|max_rank|
+  |----------|--------------|--------|
+  |2018-07-01|6             |283     |
+  |2018-08-01|1             |657     |
+  |2018-09-01|1             |771     |
+  |2019-02-01|2             |1001    |
+  |2019-03-01|1             |1135    |
+  |2019-08-01|2             |437     |
+
   We can see that interests present in only 1 month have very low index ranking, which can be misleading in our analysis. We can exclude these values for better analysis
 
 #### 5. After removing these interests - how many unique interests are there for each month?
@@ -361,6 +410,23 @@ SELECT month_year, COUNT(DISTINCT interest_id) AS total_interests
  GROUP BY month_year
  ORDER BY 2;
 ```
+|month_year|total_interests|
+|----------|---------------|
+|2018-07-01|709            |
+|2018-08-01|752            |
+|2018-09-01|774            |
+|2019-06-01|804            |
+|2019-05-01|827            |
+|2019-07-01|836            |
+|2018-10-01|853            |
+|2018-11-01|925            |
+|2019-01-01|966            |
+|2018-12-01|986            |
+|2019-04-01|1035           |
+|2019-08-01|1062           |
+|2019-02-01|1072           |
+|2019-03-01|1078           |
+
 
 ### Section C: Segment Analysis
 
@@ -376,6 +442,21 @@ SELECT month_year, COUNT(DISTINCT interest_id) AS total_interests
 	   GROUP BY month_year, interest_id, interest_name
        ORDER BY 4 DESC
        LIMIT 10;
+```
+|month_year|interest_id|interest_name                    |max_composition|
+|----------|-----------|---------------------------------|---------------|
+|2018-12-01|21057      |Work Comes First Travelers       |21.2           |
+|2018-10-01|21057      |Work Comes First Travelers       |20.28          |
+|2018-11-01|21057      |Work Comes First Travelers       |19.45          |
+|2019-01-01|21057      |Work Comes First Travelers       |18.99          |
+|2018-07-01|6284       |Gym Equipment Owners             |18.82          |
+|2019-02-01|21057      |Work Comes First Travelers       |18.39          |
+|2018-09-01|21057      |Work Comes First Travelers       |18.18          |
+|2018-07-01|39         |Furniture Shoppers               |17.44          |
+|2018-07-01|77         |Luxury Retail Shoppers           |17.19          |
+|2018-10-01|12133      |Luxury Boutique Hotel Researchers|15.15          |
+
+```sql
   -- Bottom 10 
 	  SELECT DISTINCT mn.month_year,
 			 mn.interest_id,
@@ -387,6 +468,19 @@ SELECT month_year, COUNT(DISTINCT interest_id) AS total_interests
        ORDER BY 4
        LIMIT 10;
 ```
+|month_year|interest_id|interest_name                    |max_composition|
+|----------|-----------|---------------------------------|---------------|
+|2019-05-01|45524      |Mowing Equipment Shoppers        |1.51           |
+|2019-05-01|4918       |Gastrointestinal Researchers     |1.52           |
+|2019-06-01|35742      |Disney Fans                      |1.52           |
+|2019-06-01|34083      |New York Giants Fans             |1.52           |
+|2019-04-01|44449      |United Nations Donors            |1.52           |
+|2019-05-01|20768      |Beer Aficionados                 |1.52           |
+|2019-05-01|39336      |Philadelphia 76ers Fans          |1.52           |
+|2019-05-01|6127       |LED Lighting Shoppers            |1.53           |
+|2019-05-01|36877      |Crochet Enthusiasts              |1.53           |
+|2019-06-01|6314       |Online Directory Searchers       |1.53           |
+
 #### 2. Which 5 interests had the lowest average ranking value?
 ```sql
 SELECT DISTINCT interest_id,
@@ -396,6 +490,14 @@ SELECT DISTINCT interest_id,
  ORDER BY avg_rnk
  LIMIT 5;
 ```
+|interest_id|avg_rnk|
+|-----------|-------|
+|41548      |1.000  |
+|42203      |4.111  |
+|115        |5.929  |
+|171        |9.357  |
+|4          |11.857 |
+
 #### 3. Which 5 interests had the largest standard deviation in their percentile_ranking value?
 ```SQL
 SELECT DISTINCT mn.interest_id,
@@ -407,6 +509,13 @@ SELECT DISTINCT mn.interest_id,
  ORDER BY 3 DESC
  LIMIT 5;
  ```
+|interest_id|interest_name|standard_dev|
+|-----------|-------------|------------|
+|23         |Techies      |30.18       |
+|20764      |Entertainment Industry Decision Makers|28.97       |
+|38992      |Oregon Trip Planners|28.32       |
+|43546      |Personalized Gift Shoppers|26.24       |
+|10839      |Tampa and St Petersburg Trip Planners|25.61       |
 
 #### 4. For the 5 interests found in the previous question - what was minimum and maximum percentile_ranking values for each interest and its corresponding year_month value? Can you describe what is happening for these 5 interests?
 ```sql
@@ -454,6 +563,14 @@ SELECT	t1.interest_id,
   JOIN  interest_map AS mp ON mp.id = t1.interest_id;
 ```
 
+|interest_id|interest_name|max_perc_rnk|month_year|min_perc_rnk|month_year|
+|-----------|-------------|------------|----------|------------|----------|
+|23         |Techies      |86.69       |2018-07-01|7.92        |2019-08-01|
+|20764      |Entertainment Industry Decision Makers|86.15       |2018-07-01|11.23       |2019-08-01|
+|10839      |Tampa and St Petersburg Trip Planners|75.03       |2018-07-01|4.84        |2019-03-01|
+|38992      |Oregon Trip Planners|82.44       |2018-11-01|2.2         |2019-07-01|
+|43546      |Personalized Gift Shoppers|73.15       |2019-03-01|5.7         |2019-06-01|
+
 #### 5. How would you describe our customers in this segment based off their composition and ranking values? What sort of products or services  should we show to these customers and what should we avoid?
 
 * These customers are interested in travelling, entertainment and technology industries. Their interest in these topics is related to some trends which have to be further explored
@@ -479,6 +596,17 @@ SELECT *
   FROM cte 
  WHERE rnk <= 10;
 ```
+|interest_id|interest_name|month_year|avg_composition|rnk|
+|-----------|-------------|----------|---------------|---|
+|6324       |Las Vegas Trip Planners|2018-07-01|7.36           |1  |
+|6284       |Gym Equipment Owners|2018-07-01|6.94           |2  |
+|4898       |Cosmetics and Beauty Shoppers|2018-07-01|6.78           |3  |
+|77         |Luxury Retail Shoppers|2018-07-01|6.61           |4  |
+|39         |Furniture Shoppers|2018-07-01|6.51           |5  |
+|18619      |Asian Food Enthusiasts|2018-07-01|6.1            |6  |
+|6208       |Recently Retired Individuals|2018-07-01|5.72           |7  |
+|21060      |Family Adventures Travelers|2018-07-01|4.85           |8  |
+|...
 ### 2. For all of these top 10 interests - which interest appears the most often?
 ```sql
 with cte1 AS (
@@ -503,6 +631,13 @@ SELECT DISTINCT interest_id,
   FROM cte2
  WHERE total_count = (SELECT MAX(total_count) FROM cte2);
 ```
+|interest_id|avg_rnk|
+|-----------|-------|
+|41548      |1.000  |
+|42203      |4.111  |
+|115        |5.929  |
+|171        |9.357  |
+|4          |11.857 |
 
 ### 3. What is the average of the average composition for the top 10 interests for each month?
 ```sql
@@ -522,6 +657,22 @@ SELECT month_year,
  WHERE rnk <= 10
  GROUP BY month_year;
 ```
+|month_year|avg_avg_composition|
+|----------|-------------------|
+|2018-07-01|6.04               |
+|2018-08-01|5.94               |
+|2018-09-01|6.89               |
+|2018-10-01|7.07               |
+|2018-11-01|6.62               |
+|2018-12-01|6.65               |
+|2019-01-01|6.32               |
+|2019-02-01|6.58               |
+|2019-03-01|6.12               |
+|2019-04-01|5.75               |
+|2019-05-01|3.54               |
+|2019-06-01|2.43               |
+|2019-07-01|2.76               |
+|2019-08-01|2.63               |
 
 ### 4. What is the 3 month rolling average of the max average composition value from September 2018 to August 2019 and include the previous top ranking interests in the same output shown below. 
 ```sql
@@ -558,3 +709,18 @@ SELECT month_year,
 	        ) AS sub 
 	 WHERE month_year BETWEEN '2018-09-01' AND '2019-08-01'
 	 ORDER BY 1;
+```
+|month_year|interest_id|interest_name                    |max_index_composition|3_month_moving_average|1_month_ago                      |2_month_ago                      |
+|----------|-----------|---------------------------------|---------------------|----------------------|---------------------------------|---------------------------------|
+|2018-09-01|21057      |Work Comes First Travelers       |8.26                 |7.61                  |Las Vegas Trip Planners: 7.21    |Las Vegas Trip Planners: 7.36    |
+|2018-10-01|21057      |Work Comes First Travelers       |9.14                 |8.2                   |Work Comes First Travelers: 8.26 |Las Vegas Trip Planners: 7.21    |
+|2018-11-01|21057      |Work Comes First Travelers       |8.28                 |8.56                  |Work Comes First Travelers: 9.14 |Work Comes First Travelers: 8.26 |
+|2018-12-01|21057      |Work Comes First Travelers       |8.31                 |8.58                  |Work Comes First Travelers: 8.28 |Work Comes First Travelers: 9.14 |
+|2019-01-01|21057      |Work Comes First Travelers       |7.66                 |8.08                  |Work Comes First Travelers: 8.31 |Work Comes First Travelers: 8.28 |
+|2019-02-01|21057      |Work Comes First Travelers       |7.66                 |7.88                  |Work Comes First Travelers: 7.66 |Work Comes First Travelers: 8.31 |
+|2019-03-01|7541       |Alabama Trip Planners            |6.54                 |7.29                  |Work Comes First Travelers: 7.66 |Work Comes First Travelers: 7.66 |
+|2019-04-01|6065       |Solar Energy Researchers         |6.28                 |6.83                  |Alabama Trip Planners: 6.54      |Work Comes First Travelers: 7.66 |
+|2019-05-01|21245      |Readers of Honduran Content      |4.41                 |5.74                  |Solar Energy Researchers: 6.28   |Alabama Trip Planners: 6.54      |
+|2019-06-01|6324       |Las Vegas Trip Planners          |2.77                 |4.49                  |Readers of Honduran Content: 4.41|Solar Energy Researchers: 6.28   |
+|2019-07-01|6324       |Las Vegas Trip Planners          |2.82                 |3.33                  |Las Vegas Trip Planners: 2.77    |Readers of Honduran Content: 4.41|
+|2019-08-01|4898       |Cosmetics and Beauty Shoppers    |2.73                 |2.77                  |Las Vegas Trip Planners: 2.82    |Las Vegas Trip Planners: 2.77    |
