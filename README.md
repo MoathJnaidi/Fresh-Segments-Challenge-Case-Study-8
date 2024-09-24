@@ -86,14 +86,13 @@ In July 2018, the `composition` metric is 11.89, meaning that 11.89% of the clie
 ```
 * Add a new column with date type
 ```sql
-    ALTER TABLE interest_metrics add month_year date;
+    ALTER TABLE interest_metrics ADD month_year date;
 ```
 * Then, concat month and year with the first day of each month in the new column 
 ```sql
    UPDATE interest_metrics
-      SET month_year = CAST(concat (_year, '-', 0, _month, '-', 01) AS date)
-    WHERE _month != 'NULL'
-      AND _year != 'NULL';
+      SET month_year = CAST(CONCAT(_year, '-', 0, _month, '-', 01) AS date)
+    WHERE _month != 'NULL' AND _year != 'NULL';
 ```
 |_month|_year|interest_id|composition|index_value|ranking|percentile_ranking|month_year|
 |------|-----|-----------|-----------|-----------|-------|------------------|----------|
@@ -109,8 +108,8 @@ In July 2018, the `composition` metric is 11.89, meaning that 11.89% of the clie
    SELECT month_year,
           COUNT(interest_id) AS total_count
      FROM interest_metrics
- GROUP BY month_year
- ORDER BY total_count DESC;
+    GROUP BY month_year
+    ORDER BY total_count DESC;
  ```
  |month_year|total_count|
 |----------|-----------|
@@ -153,13 +152,15 @@ In July 2018, the `composition` metric is 11.89, meaning that 11.89% of the clie
   * **The 1st solution**
 
     ```sql
-	   SELECT (SELECT COUNT(DISTINCT interest_id) 
-                 FROM interest_metrics
-                WHERE interest_id NOT IN (SELECT id FROM interest_map)
+	   SELECT (
+		SELECT COUNT(DISTINCT interest_id) 
+    		  FROM interest_metrics
+    		 WHERE interest_id NOT IN (SELECT id FROM interest_map)
               ) AS not_in_map,
-              (SELECT COUNT(DISTINCT id) 
-                 FROM interest_map
-                WHERE id NOT IN (SELECT interest_id FROM interest_metrics)
+              	  (
+		SELECT COUNT(DISTINCT id) 
+                  FROM interest_map
+                 WHERE id NOT IN (SELECT interest_id FROM interest_metrics)
               ) AS not_in_metrics;
     ```
     |not_in_map|not_in_metric|
@@ -169,12 +170,12 @@ In July 2018, the `composition` metric is 11.89, meaning that 11.89% of the clie
   * **The 2nd solution**
 
     ```sql
-	   SELECT sum(case when id is null then 1 else 0 end) as not_in_map,
-		      sum(case when interest_id is null then 1 else 0 end) as not_in_metric
+	   SELECT SUM(CASE WHEN id IS NULL THEN 1 ELSE 0 END) AS not_in_map,
+		  SUM(CASE WHEN interest_id IS NULL THEN 1 ELSE 0 END) AS not_in_metric
 	     FROM (
-                SELECT * FROM interest_metrics AS mt LEFT JOIN interest_map mp on mt.interest_id = mp.id 
-                UNION 
-	            SELECT * FROM interest_metrics AS mt RIGHT JOIN interest_map AS mp ON mt.interest_id = mp.id
+                SELECT * FROM interest_metrics AS mt LEFT JOIN interest_map AS mp ON mt.interest_id = mp.id 
+                 UNION 
+	        SELECT * FROM interest_metrics AS mt RIGHT JOIN interest_map AS mp ON mt.interest_id = mp.id
               ) AS sub;
     ```
     |not_in_map|not_in_metric|
@@ -194,13 +195,12 @@ SELECT COUNT(*) AS total_record
 * We should left join metric table with map table 
 
 ```sql
-CREATE TABLE interest_combined AS 
-    (
+CREATE TABLE interest_combined AS (
 	    SELECT mt.*,
-               mp.interest_name, 
-               mp.interest_summary, 
-               mp.created_at, 
-               mp.last_modified
+               	   mp.interest_name, 
+ 		   mp.interest_summary, 
+               	   mp.created_at, 
+                   mp.last_modified
 	      FROM interest_metrics AS mt LEFT JOIN interest_map AS mp ON mt.interest_id = mp.id
 	);
 ```
@@ -217,8 +217,8 @@ CREATE TABLE interest_combined AS
 
    ```sql
     SELECT COUNT(*) AS total 
-	  FROM interest_combined
-	 WHERE created_at > month_year;
+      FROM interest_combined
+     WHERE created_at > month_year;
    ```
    |total|
    |-----|
@@ -433,15 +433,15 @@ SELECT month_year, COUNT(DISTINCT interest_id) AS total_interests
 ### 1. Using our filtered dataset by removing the interests with less than 6 months worth of data, which are the top 10 and bottom 10 interests which have the largest composition values in any `month_year`? Only use the maximum composition value for each interest but you must keep the corresponding `month_year` 
 ```sql
   -- Top 10
-	  SELECT DISTINCT mn.month_year,
-			 mn.interest_id,
-			 mp.interest_name,
-			 MAX(mn.composition) AS max_composition
-	    FROM interest_metrics_new AS mn 
-        JOIN interest_map AS mp ON  mn.interest_id = mp.id 
-	   GROUP BY month_year, interest_id, interest_name
-       ORDER BY 4 DESC
-       LIMIT 10;
+    SELECT DISTINCT mn.month_year,
+           mn.interest_id,
+           mp.interest_name,
+  	   MAX(mn.composition) AS max_composition
+     FROM interest_metrics_new AS mn 
+     JOIN interest_map AS mp ON  mn.interest_id = mp.id 
+    GROUP BY month_year, interest_id, interest_name
+    ORDER BY 4 DESC
+    LIMIT 10;
 ```
 |month_year|interest_id|interest_name                    |max_composition|
 |----------|-----------|---------------------------------|---------------|
@@ -458,13 +458,13 @@ SELECT month_year, COUNT(DISTINCT interest_id) AS total_interests
 
 ```sql
   -- Bottom 10 
-	  SELECT DISTINCT mn.month_year,
+      SELECT DISTINCT mn.month_year,
 			 mn.interest_id,
 			 mp.interest_name,
 			 MAX(mn.composition) AS max_composition
-	    FROM interest_metrics_new AS mn 
+        FROM interest_metrics_new AS mn 
         JOIN interest_map AS mp ON  mn.interest_id = mp.id 
-	   GROUP BY month_year, interest_id, interest_name
+       GROUP BY month_year, interest_id, interest_name
        ORDER BY 4
        LIMIT 10;
 ```
@@ -530,31 +530,31 @@ WITH top_5_std AS (
 ),
 max_min_perc_rnk AS (
 	SELECT	DISTINCT interest_id,
-			MAX(percentile_ranking) AS max_perc_rnk,
-            MIN(percentile_ranking) AS min_perc_rnk
-	  FROM interest_metrics_new
-     WHERE interest_id IN (SELECT interest_id FROM top_5_std)
-     GROUP BY 1
+		MAX(percentile_ranking) AS max_perc_rnk,
+		MIN(percentile_ranking) AS min_perc_rnk
+          FROM interest_metrics_new
+         WHERE interest_id IN (SELECT interest_id FROM top_5_std)
+         GROUP BY 1
 ),
 max_month_year AS (
 	SELECT	DISTINCT t1.interest_id,
-			t1.max_perc_rnk,
-			t2.month_year as month_year
+                t1.max_perc_rnk,
+                t2.month_year as month_year
 	  FROM  max_min_perc_rnk AS t1 
-      JOIN  interest_metrics AS t2 On t1.interest_id = t2.interest_id AND t1.max_perc_rnk = t2.percentile_ranking
-     WHERE  t2.month_year IS NOT NULL
+          JOIN  interest_metrics AS t2 On t1.interest_id = t2.interest_id AND t1.max_perc_rnk = t2.percentile_ranking
+         WHERE  t2.month_year IS NOT NULL
 ),
 min_month_year AS (
 	SELECT	DISTINCT t1.interest_id,
-			t1.min_perc_rnk,
-			t2.month_year AS month_year
+                t1.min_perc_rnk,
+                t2.month_year AS month_year
 	  FROM  max_min_perc_rnk AS t1 
-      JOIN  interest_metrics AS t2 ON t1.interest_id = t2.interest_id AND t1.min_perc_rnk = t2.percentile_ranking
-     WHERE  t2.month_year IS NOT NULL
+          JOIN  interest_metrics AS t2 ON t1.interest_id = t2.interest_id AND t1.min_perc_rnk = t2.percentile_ranking
+         WHERE  t2.month_year IS NOT NULL
 )
 SELECT	t1.interest_id,
-		mp.interest_name,
-		t1.max_perc_rnk,
+   	mp.interest_name,
+	t1.max_perc_rnk,
         t1.month_year,
         t2.min_perc_rnk,
         t2.month_year
@@ -584,12 +584,12 @@ Average composition can be calculated by dividing the composition column by the 
 ```sql
 WITH cte AS (
 	SELECT	mt.interest_id,
-			mp.interest_name,
-			month_year,
-			ROUND(composition/index_value, 2) AS avg_composition,
-			RANK() OVER (PARTITION BY month_year ORDER BY ROUN (composition/index_value, 2) DESC) AS rnk
+		mp.interest_name,
+		month_year,	
+		ROUND(composition/index_value, 2) AS avg_composition,
+		RANK() OVER (PARTITION BY month_year ORDER BY ROUN (composition/index_value, 2) DESC) AS rnk
 	  FROM  interest_metrics AS mt 
-      JOIN  interest_map AS mp ON mt.interest_id = mp.id 
+ 	  JOIN  interest_map AS mp ON mt.interest_id = mp.id 
 	 WHERE  month_year IS NOT NULL
 )
 SELECT * 
@@ -611,20 +611,20 @@ SELECT *
 ```sql
 with cte1 AS (
 	SELECT	mt.interest_id,
-			mp.interest_name,
-			month_year,
-			ROUND(composition/index_value, 2) AS avg_composition,
-			RANK() OVER (PARTITION BY month_year ORDER BY ROUN (composition/index_value, 2) DESC) AS rnk
+		mp.interest_name,
+		month_year,
+		ROUND(composition/index_value, 2) AS avg_composition,
+		RANK() OVER (PARTITION BY month_year ORDER BY ROUN (composition/index_value, 2) DESC) AS rnk
 	  FROM  interest_metrics AS mt 
-      JOIN  interest_map AS mp ON mt.interest_id = mp.id 
+      	  JOIN  interest_map AS mp ON mt.interest_id = mp.id 
 	 WHERE  month_year IS NOT NULL
 ),
 cte2 AS (
 	SELECT interest_id,
-           COUNT(*) AS total_count
-	  FROM cte1
+   	       COUNT(*) AS total_count
+          FROM cte1
 	 WHERE rnk <= 10
-     GROUP BY interest_id
+	 GROUP BY interest_id
 )
 SELECT DISTINCT interest_id, 
        total_count
@@ -643,12 +643,12 @@ SELECT DISTINCT interest_id,
 ```sql
 WITH cte AS (
 	SELECT	mt.interest_id,
-			mp.interest_name,
-			month_year,
-			ROUND(composition/index_value, 2) AS avg_composition,
-			RANK() OVER (PARTITION BY month_year ORDER BY ROUND(composition/index_value, 2) DESC) AS rnk
+		mp.interest_name,
+		month_year,
+		ROUND(composition/index_value, 2) AS avg_composition,
+		RANK() OVER (PARTITION BY month_year ORDER BY ROUND(composition/index_value, 2) DESC) AS rnk
 	  FROM interest_metrics AS mt 
-      JOIN interest_map AS mp ON mt.interest_id = mp.id 
+      	  JOIN interest_map AS mp ON mt.interest_id = mp.id 
 	 WHERE month_year IS NOT NULL
 )
 SELECT month_year, 
@@ -684,31 +684,31 @@ SELECT month_year,
 				ROUND(composition/index_value, 2) AS avg_composition,
 				RANK() OVER (PARTITION BY month_year ORDER BY ROUND(composition/index_value, 2) DESC) AS rnk
 		  FROM  interest_metrics AS mt 
-          JOIN  interest_map AS mp ON mt.interest_id = mp.id 
+		  JOIN  interest_map AS mp ON mt.interest_id = mp.id 
 		  WHERE month_year IS NOT NULL
 	),
     -- create a cte for interests with highest average composition values per month
 	top_avg_composition_per_month AS (
-		SELECT	DISTINCT month_year,
-				interest_id,
-				interest_name,
-                avg_composition AS max_index_composition
+		SELECT DISTINCT month_year,
+  		       interest_id,
+		       interest_name,
+		       avg_composition AS max_index_composition
 		  FROM avg_composition_rnk
-         WHERE rnk = 1 
+	         WHERE rnk = 1 
 	)
     SELECT * 
       FROM (
 		SELECT	month_year,
-				interest_id,
-				interest_name,
-				max_index_composition,
-				ROUND(AVG(max_index_composition) OVER (ORDER BY month_year ROWS BETWEEN 2 PRECEDING AND current ROW), 2) AS 3_month_moving_average,
-				CONCAT(LAG(interest_name, 1) OVER (ORDER BY month_year), ": ", LAG(max_index_composition, 1) OVER (ORDER BY month_year)) AS 1_month_ago,
-				CONCAT(LAG(interest_name, 2) OVER (ORDER BY month_year), ": ", LAG(max_index_composition, 2) OVER (ORDER BY month_year)) AS 2_month_ago
-		  FROM top_avg_composition_per_month
+			interest_id,
+			interest_name,
+			max_index_composition,
+			ROUND(AVG(max_index_composition) OVER (ORDER BY month_year ROWS BETWEEN 2 PRECEDING AND current ROW), 2) AS 3_month_moving_average,
+			CONCAT(LAG(interest_name, 1) OVER (ORDER BY month_year), ": ", LAG(max_index_composition, 1) OVER (ORDER BY month_year)) AS 1_month_ago,
+			CONCAT(LAG(interest_name, 2) OVER (ORDER BY month_year), ": ", LAG(max_index_composition, 2) OVER (ORDER BY month_year)) AS 2_month_ago
+		  FROM  top_avg_composition_per_month
 	        ) AS sub 
-	 WHERE month_year BETWEEN '2018-09-01' AND '2019-08-01'
-	 ORDER BY 1;
+	 	 WHERE month_year BETWEEN '2018-09-01' AND '2019-08-01'
+	 	 ORDER BY 1;
 ```
 |month_year|interest_id|interest_name                    |max_index_composition|3_month_moving_average|1_month_ago                      |2_month_ago                      |
 |----------|-----------|---------------------------------|---------------------|----------------------|---------------------------------|---------------------------------|
