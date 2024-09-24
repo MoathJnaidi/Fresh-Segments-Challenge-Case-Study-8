@@ -335,11 +335,11 @@ CREATE TABLE interest_combined AS (
   ```sql
   -- 14 months
   SELECT DISTINCT month_year,
-	     COUNT(DISTINCT interest_id) AS total_interest,
+	 COUNT(DISTINCT interest_id) AS total_interest,
          MIN(ranking) AS max_rank
     FROM interest_metrics
    WHERE interest_id IN (
-	      SELECT interest_id 
+	  SELECT interest_id 
             FROM interest_metrics 
            WHERE month_year IS NOT NULL 
            GROUP BY 1
@@ -367,11 +367,11 @@ CREATE TABLE interest_combined AS (
  ```sql
   -- 1 month 
   SELECT DISTINCT month_year,
-	     COUNT(DISTINCT interest_id) AS total_interest,
+	 COUNT(DISTINCT interest_id) AS total_interest,
          MIN(ranking) AS max_rank
     FROM interest_metrics
    WHERE interest_id IN (
-	      SELECT interest_id 
+	  SELECT interest_id 
             FROM interest_metrics 
            WHERE month_year IS NOT NULL 
            GROUP BY 1
@@ -394,10 +394,10 @@ CREATE TABLE interest_combined AS (
 For the next steps, I will create a new table which will contain only the values we want in our analysis, the `interest` values that only exists in one month will not be in the new table
 ```sql
 CREATE TABLE interest_metrics_new AS (
-	SELECT *
+   SELECT *
       FROM interest_metrics
      WHERE interest_id NOT IN (
-		    SELECT interest_id 
+            SELECT interest_id 
               FROM interest_metrics 
              WHERE month_year IS NOT NULL 
              GROUP BY interest_id 
