@@ -696,8 +696,8 @@ SELECT month_year,
 		  FROM avg_composition_rnk
 	         WHERE rnk = 1 
 	)
-    SELECT * 
-      FROM (
+      SELECT * 
+       FROM (
 		SELECT	month_year,
 			interest_id,
 			interest_name,
@@ -707,8 +707,8 @@ SELECT month_year,
 			CONCAT(LAG(interest_name, 2) OVER (ORDER BY month_year), ": ", LAG(max_index_composition, 2) OVER (ORDER BY month_year)) AS 2_month_ago
 		  FROM  top_avg_composition_per_month
 	        ) AS sub 
-	 	 WHERE month_year BETWEEN '2018-09-01' AND '2019-08-01'
-	 	 ORDER BY 1;
+      WHERE month_year BETWEEN '2018-09-01' AND '2019-08-01'
+      ORDER BY 1;
 ```
 |month_year|interest_id|interest_name                    |max_index_composition|3_month_moving_average|1_month_ago                      |2_month_ago                      |
 |----------|-----------|---------------------------------|---------------------|----------------------|---------------------------------|---------------------------------|
