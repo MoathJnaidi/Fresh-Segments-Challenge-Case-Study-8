@@ -153,14 +153,14 @@ In July 2018, the `composition` metric is 11.89, meaning that 11.89% of the clie
 
     ```sql
 	   SELECT (
-		    SELECT COUNT(DISTINCT interest_id) 
+		SELECT COUNT(DISTINCT interest_id) 
     		  FROM interest_metrics
     		 WHERE interest_id NOT IN (SELECT id FROM interest_map)
             ) AS not_in_map,
             (
-		    SELECT COUNT(DISTINCT id) 
-          FROM interest_map
-          WHERE id NOT IN (SELECT interest_id FROM interest_metrics)
+		SELECT COUNT(DISTINCT id) 
+	          FROM interest_map
+	         WHERE id NOT IN (SELECT interest_id FROM interest_metrics)
             ) AS not_in_metrics;
     ```
     |not_in_map|not_in_metric|
@@ -171,12 +171,12 @@ In July 2018, the `composition` metric is 11.89, meaning that 11.89% of the clie
 
     ```sql
 	   SELECT SUM(CASE WHEN id IS NULL THEN 1 ELSE 0 END) AS not_in_map,
-		        SUM(CASE WHEN interest_id IS NULL THEN 1 ELSE 0 END) AS not_in_metric
+		  SUM(CASE WHEN interest_id IS NULL THEN 1 ELSE 0 END) AS not_in_metric
 	     FROM (
                 SELECT * 
                   FROM interest_metrics AS mt LEFT JOIN interest_map AS mp ON mt.interest_id = mp.id 
                  UNION 
-	              SELECT * FROM interest_metrics AS mt RIGHT JOIN interest_map AS mp ON mt.interest_id = mp.id
+	        SELECT * FROM interest_metrics AS mt RIGHT JOIN interest_map AS mp ON mt.interest_id = mp.id
             ) AS sub;
     ```
     |not_in_map|not_in_metric|
